@@ -1,0 +1,38 @@
+@startuml
+skinparam responseMessageBelowArrow true 
+
+skinparam sequence {
+ArrowColor DarkCyan
+
+LifeLineBorderColor Teal
+LifeLineBackgroundColor TECHNOLOGY
+
+ParticipantBorderColor Teal
+ParticipantBackgroundColor TECHNOLOGY
+ParticipantFontColor Black
+}
+
+participant "Client" as cl
+participant "Connected Server\n(Catalog Service Consumer)" as cs
+participant "Catalog Service Provider" as csp
+participant "Storage Host\n(Catalog Service Consumer)" as sh
+
+activate cs
+    group Operation [Critical Section]
+        cl -> cs : rcDataObjPut
+        group Put [Critical Section]
+            cs -> cs : rsDataObjPut
+            cs -> csp : rc_data_object_finalize
+        end 
+        cs -> cs : fileModified
+        group Replication [Critical Section]
+            cs -> cs : rsDataObjRepl
+            cs -> csp : rc_data_object_finalize
+        end 
+        group Replication [Critical Section]
+            cs -> cs : rsDataObjRepl
+            cs -> csp : rc_data_object_finalize
+        end 
+    end 
+deactivate cs
+@enduml

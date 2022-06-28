@@ -1,0 +1,57 @@
+@startuml
+skinparam responseMessageBelowArrow true
+
+skinparam Note {
+BorderColor Teal
+BackgroundColor TECHNOLOGY
+FontColor Black
+}
+
+skinparam sequence {
+ArrowColor DarkCyan
+
+LifeLineBorderColor Teal
+LifeLineBackgroundColor TECHNOLOGY
+
+ParticipantBorderColor Teal
+ParticipantBackgroundColor TECHNOLOGY
+ParticipantFontColor Black
+}
+
+participant "Client" as cl
+participant "Connected Server\n(Catalog Service Consumer)" as cs
+participant "Catalog Service Provider" as csp
+participant "Storage Host\n(Catalog Service Consumer)" as sh
+
+group Data Modification [Critical Section]
+    cl -> cs : rcDataObjOpen
+    cs -> csp : rcPhyPathReg
+    activate csp
+    deactivate csp
+    
+    cs -> sh : rcFileOpen
+    activate sh
+        cs -> sh : setup parallel transfer portal
+        sh -> cs : return portal information
+        cs -> cl : return portal information
+        
+        cl -> sh : connect to portal
+        sh -> cl : acknowledgement
+
+        loop until done 
+            cl -> sh : direct transfer of data 
+            cl -> sh
+            note left: with N threads
+            cl -> sh
+        end  
+
+        cl -> cs : rcDataObjClose
+        cs -> sh : rcFileClose
+    deactivate sh
+
+    cs -> csp : rc_data_object_finalize
+    activate csp
+    deactivate csp
+end
+@enduml
+
